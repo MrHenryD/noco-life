@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./pg_data:/var/lib/postgresql/data
+      - ./nc_data:/usr/app/data
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: nocodb
+    healthcheck:
+      test: pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 2s
+      retries: 10
+  nocodb:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: nocodb/nocodb:latest
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      NC_DB: "pg://postgres:5432?u=postgres&p=password&d=nocodb"
